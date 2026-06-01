@@ -1,0 +1,12 @@
+{
+  "name": "trenddrop-storefront",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "npx serve ."
+  },
+  "dependencies": {
+    "@vercel/speed-insights": "^1.3.1"
+  }
+}
