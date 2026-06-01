@@ -4,30 +4,35 @@ let cart = JSON.parse(localStorage.getItem('td_cart') || '[]');
 let stripePublishableKey = '';
 let stripe = null;
 
-// === Product Images — using real AI-generated scene images ===
-const productImages = {
-  'td-001': '/images/product_unbrush.png',
-  'td-002': '/images/product_pulling_oil.png',
-  'td-003': '/images/product_tirtir_cushion.png',
-  'td-004': '/images/product_owala_bottle.png',
-  'td-005': '/images/product_led_strips.png',
-  'td-006': '/images/product_jar_opener.png',
-  'td-007': '/images/product_sunset_lamp.png',
-  'td-008': '/images/product_walking_pad.png',
-  'td-009': '/images/product_neck_fan.png',
-  'td-010': '/images/product_weighted_plush.png',
-  'td-011': '/images/product_heatless_curler.png',
-  'td-012': '/images/product_power_bank.png',
-  'td-013': '/images/product_water_bottle.png',
-  'td-014': '/images/product_led_mirror.png',
-  'td-015': '/images/product_magnetic_balloons.png',
-  'td-016': '/images/product_phone_stand.png',
-  'td-017': '/images/product_neck_light.png',
-  'td-018': '/images/product_soap_dispenser.png',
-  'td-019': '/images/product_neck_fan.png',
-  'td-020': '/images/product_power_bank.png'
+// === Product Images — relevant photos from Unsplash source API ===
+// Each product gets a curated search term so images match what's being sold
+const productImageQueries = {
+  'td-001': 'hair-brush',          // Unbrush Detangling Hair Brush
+  'td-002': 'coconut-oil',         // GuruNanda Cocomint Pulling Oil
+  'td-003': 'makeup-cushion',      // TIRTIR Mask Fit Red Cushion
+  'td-004': 'water-bottle',        // Owala FreeSip Water Bottle
+  'td-005': 'led-lights',          // Govee RGBIC LED Strip Lights
+  'td-006': 'jar-opener',          // Automatic Electric Jar Opener
+  'td-007': 'sunset-lamp',         // Sunset Lamp Projector
+  'td-008': 'walking-pad',         // Foldable Walking Pad
+  'td-009': 'neck-fan',            // Portable Neck Fan
+  'td-010': 'stuffed-animal',      // Weighted Stuffed Animal
+  'td-011': 'headphones',          // Sleep Headphones Bluetooth Headband
+  'td-012': 'cleaning-brush',      // Electric Spin Scrubber
+  'td-013': 'hair-curler',         // Heatless Silk Hair Curler
+  'td-014': 'vegetable-chopper',   // Multi-functional Vegetable Chopper
+  'td-015': 'trash-can',           // Slim Motion Sensor Trash Can
+  'td-016': 'water-balloons',      // Reusable Magnetic Water Balloons
+  'td-017': 'neck-pillow',         // Cervical Neck Traction Pillow
+  'td-018': 'soap-dispenser',      // Automatic Touchless Soap Dispenser
+  'td-019': 'reading-light',       // Neck Reading Light
+  'td-020': 'power-bank'           // Ultra-Slim Power Bank with Built-in Cables
 };
-function getProductImage(id) { return productImages[id] || '/images/product_unbrush.png'; }
+function getProductImage(id) {
+  const q = productImageQueries[id];
+  if (q) return `https://source.unsplash.com/600x400/?${q}&sig=${id}`;
+  return 'https://source.unsplash.com/600x400/?product&sig=default';
+}
 
 // === DOM Refs ===
 const $ = s => document.querySelector(s);
