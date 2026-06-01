@@ -4,35 +4,30 @@ let cart = JSON.parse(localStorage.getItem('td_cart') || '[]');
 let stripePublishableKey = '';
 let stripe = null;
 
-// === Product Images — relevant photos from Unsplash source API ===
-// Each product gets a curated search term so images match what's being sold
-const productImageQueries = {
-  'td-001': 'hair-brush',          // Unbrush Detangling Hair Brush
-  'td-002': 'coconut-oil',         // GuruNanda Cocomint Pulling Oil
-  'td-003': 'makeup-cushion',      // TIRTIR Mask Fit Red Cushion
-  'td-004': 'water-bottle',        // Owala FreeSip Water Bottle
-  'td-005': 'led-lights',          // Govee RGBIC LED Strip Lights
-  'td-006': 'jar-opener',          // Automatic Electric Jar Opener
-  'td-007': 'sunset-lamp',         // Sunset Lamp Projector
-  'td-008': 'walking-pad',         // Foldable Walking Pad
-  'td-009': 'neck-fan',            // Portable Neck Fan
-  'td-010': 'stuffed-animal',      // Weighted Stuffed Animal
-  'td-011': 'headphones',          // Sleep Headphones Bluetooth Headband
-  'td-012': 'cleaning-brush',      // Electric Spin Scrubber
-  'td-013': 'hair-curler',         // Heatless Silk Hair Curler
-  'td-014': 'vegetable-chopper',   // Multi-functional Vegetable Chopper
-  'td-015': 'trash-can',           // Slim Motion Sensor Trash Can
-  'td-016': 'water-balloons',      // Reusable Magnetic Water Balloons
-  'td-017': 'neck-pillow',         // Cervical Neck Traction Pillow
-  'td-018': 'soap-dispenser',      // Automatic Touchless Soap Dispenser
-  'td-019': 'reading-light',       // Neck Reading Light
-  'td-020': 'power-bank'           // Ultra-Slim Power Bank with Built-in Cables
+// === Product Images — curated direct Unsplash photo URLs matching each product ===
+const productImages = {
+  'td-001': 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=600&h=400&fit=crop',
+  'td-002': 'https://images.unsplash.com/photo-1613336026275-b6d4735c5f5f?w=600&h=400&fit=crop',
+  'td-003': 'https://images.unsplash.com/photo-1599733589046-10c7f0f8f7e0?w=600&h=400&fit=crop',
+  'td-004': 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=600&h=400&fit=crop',
+  'td-005': 'https://images.unsplash.com/photo-1558642452-9d2a7deb7f62?w=600&h=400&fit=crop',
+  'td-006': 'https://images.unsplash.com/photo-1594226801341-41427b4e5c1b?w=600&h=400&fit=crop',
+  'td-007': 'https://images.unsplash.com/photo-1519677100203-a0e668c92439?w=600&h=400&fit=crop',
+  'td-008': 'https://images.unsplash.com/photo-1626447269094-f86522e36d31?w=600&h=400&fit=crop',
+  'td-009': 'https://images.unsplash.com/photo-1583863788434-e58a36330cf0?w=600&h=400&fit=crop',
+  'td-010': 'https://images.unsplash.com/photo-1559715541-5d5e35b5f52b?w=600&h=400&fit=crop',
+  'td-011': 'https://images.unsplash.com/photo-1606220588913-b3aacb4d2f46?w=600&h=400&fit=crop',
+  'td-012': 'https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=600&h=400&fit=crop',
+  'td-013': 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=600&h=400&fit=crop',
+  'td-014': 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=600&h=400&fit=crop',
+  'td-015': 'https://images.unsplash.com/photo-1585386959984-a4155224a1ad?w=600&h=400&fit=crop',
+  'td-016': 'https://images.unsplash.com/photo-1556139943-4bdca53adc1e?w=600&h=400&fit=crop',
+  'td-017': 'https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?w=600&h=400&fit=crop',
+  'td-018': 'https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=600&h=400&fit=crop',
+  'td-019': 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&h=400&fit=crop',
+  'td-020': 'https://images.unsplash.com/photo-1583863788434-e58a36330cf0?w=600&h=400&fit=crop'
 };
-function getProductImage(id) {
-  const q = productImageQueries[id];
-  if (q) return `https://source.unsplash.com/600x400/?${q}&sig=${id}`;
-  return 'https://source.unsplash.com/600x400/?product&sig=default';
-}
+function getProductImage(id) { return productImages[id] || 'https://images.unsplash.com/photo-1558642452-9d2a7deb7f62?w=600&h=400&fit=crop'; }
 
 // === DOM Refs ===
 const $ = s => document.querySelector(s);
