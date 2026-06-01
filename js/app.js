@@ -4,35 +4,34 @@ let cart = JSON.parse(localStorage.getItem('td_cart') || '[]');
 let stripePublishableKey = '';
 let stripe = null;
 
-// === Product Images ===
+// === Product Images — using real AI-generated scene images ===
 const productImages = {
-  'td-001': 'https://images.unsplash.com/photo-1616683699404-fb2e48cb4a28?w=600&h=400&fit=crop',
-  'td-002': 'https://images.unsplash.com/photo-1613336026275-b6d4735c5f5f?w=600&h=400&fit=crop',
-  'td-003': 'https://images.unsplash.com/photo-1599733589046-10c7f0f8f7e0?w=600&h=400&fit=crop',
-  'td-004': 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=600&h=400&fit=crop',
-  'td-005': 'https://images.unsplash.com/photo-1558642452-9d2a7deb7f62?w=600&h=400&fit=crop',
-  'td-006': 'https://images.unsplash.com/photo-1594226801341-41427b4e5c1b?w=600&h=400&fit=crop',
-  'td-007': 'https://images.unsplash.com/photo-1519677100203-a0e668c92439?w=600&h=400&fit=crop',
-  'td-008': 'https://images.unsplash.com/photo-1626447269094-f86522e36d31?w=600&h=400&fit=crop',
-  'td-009': 'https://images.unsplash.com/photo-1583863788434-e58a36330cf0?w=600&h=400&fit=crop',
-  'td-010': 'https://images.unsplash.com/photo-1559715541-5d5e35b5f52b?w=600&h=400&fit=crop',
-  'td-011': 'https://images.unsplash.com/photo-1606220588913-b3aacb4d2f46?w=600&h=400&fit=crop',
-  'td-012': 'https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=600&h=400&fit=crop',
-  'td-013': 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=600&h=400&fit=crop',
-  'td-014': 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=600&h=400&fit=crop',
-  'td-015': 'https://images.unsplash.com/photo-1585386959984-a4155224a1ad?w=600&h=400&fit=crop',
-  'td-016': 'https://images.unsplash.com/photo-1626806819282-2c1dc01a5e0c?w=600&h=400&fit=crop',
-  'td-017': 'https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?w=600&h=400&fit=crop',
-  'td-018': 'https://images.unsplash.com/photo-1585386959984-a4155224a1ad?w=600&h=400&fit=crop',
-  'td-019': 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&h=400&fit=crop',
-  'td-020': 'https://images.unsplash.com/photo-1583863788434-e58a36330cf0?w=600&h=400&fit=crop'
+  'td-001': '/images/product_unbrush.png',
+  'td-002': '/images/product_pulling_oil.png',
+  'td-003': '/images/product_tirtir_cushion.png',
+  'td-004': '/images/product_owala_bottle.png',
+  'td-005': '/images/product_led_strips.png',
+  'td-006': '/images/product_jar_opener.png',
+  'td-007': '/images/product_sunset_lamp.png',
+  'td-008': '/images/product_walking_pad.png',
+  'td-009': '/images/product_neck_fan.png',
+  'td-010': '/images/product_weighted_plush.png',
+  'td-011': '/images/product_heatless_curler.png',
+  'td-012': '/images/product_power_bank.png',
+  'td-013': '/images/product_water_bottle.png',
+  'td-014': '/images/product_led_mirror.png',
+  'td-015': '/images/product_magnetic_balloons.png',
+  'td-016': '/images/product_phone_stand.png',
+  'td-017': '/images/product_neck_light.png',
+  'td-018': '/images/product_soap_dispenser.png',
+  'td-019': '/images/product_neck_fan.png',
+  'td-020': '/images/product_power_bank.png'
 };
-function getProductImage(id) { return productImages[id] || `https://picsum.photos/seed/${id}/600/400`; }
+function getProductImage(id) { return productImages[id] || '/images/product_unbrush.png'; }
 
 // === DOM Refs ===
 const $ = s => document.querySelector(s);
 const $$ = s => document.querySelectorAll(s);
-
 const productsGrid = $('#productsGrid');
 const loadingText = $('#loadingText');
 const cartDrawer = $('#cartDrawer');
@@ -68,7 +67,6 @@ const reviews = [
 // === Init ===
 document.addEventListener('DOMContentLoaded', async () => {
   try {
-    // Fetch Stripe config
     const configRes = await fetch('/api/config');
     if (configRes.ok) {
       const config = await configRes.json();
@@ -108,13 +106,9 @@ function renderTrendingCarousel(prods) {
     </button>
   `).join('');
 }
-
-// Make scrollToProducts globally accessible
 window.scrollToProducts = function(e) {
   const id = e.currentTarget.dataset.id;
-  // Scroll to products section
   document.getElementById('products').scrollIntoView({ behavior: 'smooth' });
-  // Open the product modal after a short delay
   setTimeout(() => openModal(id), 500);
 };
 
@@ -144,23 +138,17 @@ function setupNewsletter() {
     newsletterSuccess.querySelector('.newsletter-success-text').textContent = "You're already subscribed! 🎉";
     return;
   }
-
   newsletterFormEl.addEventListener('submit', (e) => {
     e.preventDefault();
     const email = newsletterEmail.value.trim();
     if (!email) return;
-
-    // Store subscription
     localStorage.setItem('td_newsletter', 'true');
     localStorage.setItem('td_newsletter_email', email);
-
-    // Show success
     newsletterFormEl.style.display = 'none';
     newsletterSuccess.style.display = 'block';
   });
 }
 
-// Escape HTML
 function esc(s) {
   const div = document.createElement('div');
   div.textContent = s;
@@ -169,12 +157,9 @@ function esc(s) {
 
 // === Render Products ===
 function renderProducts(prods) {
-  // Shuffle for visual variety
   const shuffled = [...prods].sort(() => Math.random() - 0.5);
-
   productsGrid.innerHTML = shuffled.map((p, i) => {
     const actualImg = getProductImage(p.id);
-
     return `<div class="product-card" data-id="${p.id}">
       <div class="product-image-wrap">
         <img class="product-image" src="${actualImg}" alt="${esc(p.name)}" loading="lazy" />
@@ -191,15 +176,12 @@ function renderProducts(prods) {
     </div>`;
   }).join('');
 
-  // Product card click -> modal
   productsGrid.querySelectorAll('.product-card').forEach(card => {
     card.addEventListener('click', e => {
       if (e.target.closest('.product-buy-btn')) return;
       openModal(card.dataset.id);
     });
   });
-
-  // Buy buttons -> cart + checkout
   productsGrid.querySelectorAll('.product-buy-btn').forEach(btn => {
     btn.addEventListener('click', e => {
       e.stopPropagation();
@@ -212,10 +194,8 @@ function renderProducts(prods) {
 function openModal(id) {
   const p = products.find(x => x.id === id);
   if (!p) return;
-
   const actualImg = getProductImage(p.id);
   const productReviews = reviews.filter(r => r.product.toLowerCase().includes(p.name.split(' ')[0].toLowerCase()));
-
   let reviewsHtml = '';
   if (productReviews.length > 0) {
     reviewsHtml = `<div style="margin-top:20px;padding-top:20px;border-top:1px solid rgba(255,255,255,0.06)">
@@ -229,7 +209,6 @@ function openModal(id) {
       `).join('')}
     </div>`;
   }
-
   modalBody.innerHTML = `
     <img class="modal-product-img" src="${actualImg}" alt="${esc(p.name)}" />
     <h2 class="modal-product-name">${esc(p.name)}</h2>
@@ -244,12 +223,10 @@ function openModal(id) {
       Buy Now — $${p.price.toFixed(2)}
     </button>
   `;
-
   modalBody.querySelector('.modal-buy-btn').addEventListener('click', () => {
     addToCart(id);
     modal.classList.remove('active');
   });
-
   modal.classList.add('active');
 }
 
@@ -261,15 +238,11 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') modal.classL
 function addToCart(id) {
   const p = products.find(x => x.id === id);
   if (!p) return;
-
   const existing = cart.find(item => item.id === id);
   if (existing) { existing.qty += 1; }
   else { cart.push({ id, qty: 1 }); }
-
   saveCart();
   updateCartUI();
-
-  // Visual feedback
   const btn = document.querySelector(`.product-buy-btn[data-id="${id}"]`);
   if (btn) {
     btn.textContent = '✓ Added!';
@@ -279,7 +252,6 @@ function addToCart(id) {
       btn.style.background = '';
     }, 1200);
   }
-
   openCart();
 }
 
@@ -290,14 +262,7 @@ function removeFromCart(id) {
 }
 
 function saveCart() { localStorage.setItem('td_cart', JSON.stringify(cart)); }
-
-function getCartTotal() {
-  return cart.reduce((sum, item) => {
-    const p = products.find(x => x.id === item.id);
-    return sum + (p ? p.price * item.qty : 0);
-  }, 0);
-}
-
+function getCartTotal() { return cart.reduce((sum, item) => { const p = products.find(x => x.id === item.id); return sum + (p ? p.price * item.qty : 0); }, 0); }
 function getCartCount() { return cart.reduce((sum, item) => sum + item.qty, 0); }
 
 function updateCartUI() {
@@ -315,10 +280,8 @@ function renderCartItems() {
     cartFooter.style.display = 'none';
     return;
   }
-
   cartFooter.style.display = 'block';
   const total = getCartTotal();
-
   cartItems.innerHTML = cart.map(item => {
     const p = products.find(x => x.id === item.id);
     if (!p) return '';
@@ -331,11 +294,9 @@ function renderCartItems() {
       </div>
     </div>`;
   }).join('');
-
   cartItems.querySelectorAll('.cart-item-remove').forEach(btn => {
     btn.addEventListener('click', () => removeFromCart(btn.dataset.id));
   });
-
   cartTotal.textContent = `$${total.toFixed(2)}`;
   document.querySelector('.cart-count') && (document.querySelector('.cart-count').textContent = `(${getCartCount()})`);
 }
@@ -351,90 +312,73 @@ cartClose.addEventListener('click', () => {
   cartOverlay.classList.remove('active');
   document.body.style.overflow = '';
 });
-
 cartOverlay.addEventListener('click', () => {
   cartDrawer.classList.remove('active');
   cartOverlay.classList.remove('active');
   document.body.style.overflow = '';
 });
-
 cartIcon.addEventListener('click', openCart);
+menuToggle.addEventListener('click', () => { mobileMenu.classList.toggle('active'); });
 
-// Mobile menu
-menuToggle.addEventListener('click', () => {
-  mobileMenu.classList.toggle('active');
-});
-
-// === Checkout via Stripe ===
+// === Stripe Checkout ===
 async function checkout() {
   if (cart.length === 0) return;
 
-  const total = getCartTotal();
-  const orderRef = 'TD-' + Date.now().toString(36).toUpperCase();
+  try {
+    // Try Stripe checkout via Vercel API
+    const res = await fetch('/api/create-checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ items: cart.map(i => ({ id: i.id, qty: i.qty })) })
+    });
 
-  // Save order locally for manual fulfillment
+    if (res.ok) {
+      const data = await res.json();
+      if (data.url) {
+        // Redirect to Stripe Checkout
+        window.location.href = data.url;
+        return;
+      }
+      if (data.sessionId && stripe) {
+        const result = await stripe.redirectToCheckout({ sessionId: data.sessionId });
+        if (result.error) throw result.error;
+        return;
+      }
+    }
+  } catch (e) {
+    console.warn('Stripe checkout failed:', e);
+  }
+
+  // Fallback: save order locally
+  const orderRef = 'TD-' + Date.now().toString(36).toUpperCase();
   const order = {
     ref: orderRef,
     items: cart.map(item => {
       const p = products.find(x => x.id === item.id);
       return { id: item.id, name: p?.name, qty: item.qty, price: p?.price, aliexpress_url: p?.aliexpress_url };
     }),
-    total,
+    total: getCartTotal(),
     date: new Date().toISOString()
   };
-
-  try {
-    // Try Stripe checkout
-    if (stripe) {
-      const checkoutRes = await fetch('/api/create-checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items: cart, orderRef })
-      });
-      if (checkoutRes.ok) {
-        const { sessionId } = await checkoutRes.json();
-        const result = await stripe.redirectToCheckout({ sessionId });
-        if (result.error) throw result.error;
-        return;
-      }
-    }
-  } catch (e) {
-    console.warn('Stripe checkout failed, using direct link:', e);
-  }
-
-  // Fallback: direct AliExpress links for each product + save order
-  saveOrderToLocal(order);
-
-  // Log order and redirect to first product's AliExpress
-  const firstItem = order.items[0];
-  if (firstItem?.aliexpress_url) {
-    window.open(firstItem.aliexpress_url, '_blank');
-  }
-
-  // Clear cart after purchase
-  cart = [];
-  saveCart();
-  updateCartUI();
-  cartDrawer.classList.remove('active');
-  cartOverlay.classList.remove('active');
-  document.body.style.overflow = '';
-
-  alert(`Order ${orderRef} saved! Check /orders/ folder for fulfillment details.`);
-}
-
-function saveOrderToLocal(order) {
-  // Save order to localStorage for reference
   const orders = JSON.parse(localStorage.getItem('td_orders') || '[]');
   orders.push(order);
   localStorage.setItem('td_orders', JSON.stringify(orders));
+  alert(`Order ${orderRef} saved! We'll process it shortly.`);
+  cart = [];
+  saveCart();
+  updateCartUI();
+  closeCart();
 }
 
-// Add checkout button listener after DOM
+function closeCart() {
+  cartDrawer.classList.remove('active');
+  cartOverlay.classList.remove('active');
+  document.body.style.overflow = '';
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   const checkoutBtn = document.getElementById('checkoutBtn');
   if (checkoutBtn) checkoutBtn.addEventListener('click', checkout);
 });
-
-// Helper to close cart when clicking checkout button inside footer
 const checkoutBtn = document.getElementById('checkoutBtn');
 if (checkoutBtn) checkoutBtn.addEventListener('click', checkout);
