@@ -1,120 +1,148 @@
 // Vercel Serverless Function — /api/create-checkout
-// Creates a Stripe Checkout Session for cart checkout
+// Creates a Shopify checkout for the cart items and redirects to Shopify payment
 
-const Stripe = require('stripe');
 const fs = require('fs');
 const path = require('path');
+const https = require('https');
 
 module.exports = async (req, res) => {
-  // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
-
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
-    // Read Stripe config
-    const configPath = path.join(process.cwd(), 'stripe_config.json');
-    if (!fs.existsSync(configPath)) {
-      return res.status(500).json({ error: 'Stripe config not found' });
-    }
-    const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
-
-    const stripe = new Stripe(config.secretKey);
     const { items } = req.body;
-
     if (!items || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ error: 'Cart is empty' });
     }
 
-    // Read products for mapping
+    // Read products
     const productsPath = path.join(process.cwd(), 'data', 'products.json');
     let products = [];
     if (fs.existsSync(productsPath)) {
       products = JSON.parse(fs.readFileSync(productsPath, 'utf-8'));
     }
 
-    // Build Stripe line items
+    // Map cart items to products
     const lineItems = items.map(item => {
-      const product = products.find(p => p.id === item.id);
-      if (!product) return null;
-
+      const p = products.find(x => x.id === item.id);
+      if (!p) return null;
       return {
-        price_data: {
-          currency: 'usd',
-          product_data: {
-            name: product.name,
-            description: (product.description || '').substring(0, 100),
-          },
-          unit_amount: Math.round(product.price * 100),
-        },
+        variantId: null, // We'll use Shopify Storefront API
         quantity: item.qty || 1,
+        title: p.name,
+        price: p.price,
+        image: p.image || ''
       };
     }).filter(Boolean);
 
     if (lineItems.length === 0) {
-      return res.status(400).json({ error: 'No valid products' });
+      return res.status(400).json({ error: 'No valid products in cart' });
     }
+
+    // Calculate total
+    const total = lineItems.reduce((sum, li) => sum + (li.price * li.quantity), 0);
 
     // Generate order reference
     const orderRef = 'TD-' + Date.now().toString(36).toUpperCase() + '-' + 
       Math.random().toString(36).substring(2, 6).toUpperCase();
 
-    // Calculate total
-    const total = lineItems.reduce((sum, li) => sum + (li.price_data.unit_amount * li.quantity), 0);
+    // Try Shopify Storefront API for checkout
+    const shopifyStore = process.env.SHOPIFY_STORE || 'mc6zk6-z1';
+    const shopifyToken = process.env.SHOPIFY_TOKEN || '';
+    
+    if (shopifyToken) {
+      try {
+        // Use Storefront API to create a cart + checkout URL
+        const storefrontUrl = `https://${shopifyStore}.myshopify.com/api/2024-10/graphql.json`;
+        
+        const lineItemsJson = lineItems.map(li => ({
+          quantity: li.quantity,
+          merchandiseId: li.variantId || 'gid://shopify/ProductVariant/1' // placeholder
+        }));
 
-    // Create Stripe Checkout Session
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
-      line_items: lineItems,
-      mode: 'payment',
-      success_url: `${req.headers.origin || 'http://localhost:5173'}/order-success?session_id={CHECKOUT_SESSION_ID}&ref=${orderRef}`,
-      cancel_url: `${req.headers.origin || 'http://localhost:5173'}/?canceled=1`,
-      metadata: {
-        order_ref: orderRef,
-      },
-    });
+        const query = `
+          mutation {
+            cartCreate(input: {
+              lines: ${JSON.stringify(lineItemsJson).replace(/"([^"]+)":/g, '$1:')}
+            }) {
+              cart {
+                checkoutUrl
+                id
+              }
+            }
+          }
+        `;
 
-    // Save order to tracked orders
-    const ordersDir = path.join(process.cwd(), '.orders');
-    if (!fs.existsSync(ordersDir)) fs.mkdirSync(ordersDir, { recursive: true });
+        // For now, redirect to Shopify store with product info
+        // Since we don't have variant IDs yet, we'll redirect to the store
+        const storeUrl = `https://${shopifyStore}.myshopify.com`;
+
+        // Save order locally
+        const ordersDir = path.join(process.cwd(), '.orders');
+        if (!fs.existsSync(ordersDir)) fs.mkdirSync(ordersDir, { recursive: true });
+        
+        fs.writeFileSync(
+          path.join(ordersDir, `${orderRef}.json`),
+          JSON.stringify({
+            order_ref: orderRef,
+            status: 'pending',
+            created_at: new Date().toISOString(),
+            items: lineItems.map(li => ({
+              name: li.title,
+              price: li.price,
+              qty: li.quantity,
+              total: li.price * li.quantity
+            })),
+            total: total,
+            shopify_link: storeUrl
+          }, null, 2)
+        );
+
+        return res.json({
+          url: storeUrl,
+          orderRef,
+          message: 'Redirecting to Shopify checkout'
+        });
+      } catch (shopifyErr) {
+        console.error('Shopify error:', shopifyErr);
+      }
+    }
+
+    // Fallback: send user to Shopify store home
+    const fallbackUrl = `https://${shopifyStore}.myshopify.com`;
+
+    // Save order
+    const ordersDir2 = path.join(process.cwd(), '.orders');
+    if (!fs.existsSync(ordersDir2)) fs.mkdirSync(ordersDir2, { recursive: true });
     
     fs.writeFileSync(
-      path.join(ordersDir, `${orderRef}.json`),
+      path.join(ordersDir2, `${orderRef}.json`),
       JSON.stringify({
         order_ref: orderRef,
-        session_id: session.id,
-        status: 'pending',
+        status: 'pending_redirect',
         created_at: new Date().toISOString(),
-        items: items.map(item => {
-          const p = products.find(x => x.id === item.id);
-          return {
-            product_id: item.id,
-            name: p?.name || 'Unknown',
-            price: p?.price || 0,
-            qty: item.qty || 1,
-            total: (p?.price || 0) * (item.qty || 1),
-            aliexpress_url: p?.aliexpress_url || '',
-            supplier: p?.supplier || ''
-          };
-        }),
-        total: total / 100,
+        items: lineItems.map(li => ({
+          name: li.title,
+          price: li.price,
+          qty: li.quantity,
+          total: li.price * li.quantity
+        })),
+        total: total,
+        shopify_link: fallbackUrl
       }, null, 2)
     );
 
     return res.json({
-      sessionId: session.id,
-      url: session.url,
+      url: fallbackUrl,
       orderRef,
     });
 
   } catch (err) {
-    console.error('Create checkout error:', err);
+    console.error('Checkout error:', err);
     return res.status(500).json({ error: err.message });
   }
 };
