@@ -320,12 +320,20 @@ cartOverlay.addEventListener('click', () => {
 cartIcon.addEventListener('click', openCart);
 menuToggle.addEventListener('click', () => { mobileMenu.classList.toggle('active'); });
 
-// === Stripe Checkout ===
+// === Shopify Checkout ===
 async function checkout() {
   if (cart.length === 0) return;
 
+  // Save cart items to localStorage so Shopify can reference them
+  const cartSummary = cart.map(item => {
+    const p = products.find(x => x.id === item.id);
+    return { id: item.id, name: p?.name, qty: item.qty, price: p?.price };
+  });
+  localStorage.setItem('td_checkout_cart', JSON.stringify(cartSummary));
+  localStorage.setItem('td_checkout_total', getCartTotal().toFixed(2));
+
+  // Try the API to save order and get Shopify redirect
   try {
-    // Try Stripe checkout via Vercel API
     const res = await fetch('/api/create-checkout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -335,39 +343,17 @@ async function checkout() {
     if (res.ok) {
       const data = await res.json();
       if (data.url) {
-        // Redirect to Stripe Checkout
+        // Redirect to Shopify store
         window.location.href = data.url;
-        return;
-      }
-      if (data.sessionId && stripe) {
-        const result = await stripe.redirectToCheckout({ sessionId: data.sessionId });
-        if (result.error) throw result.error;
         return;
       }
     }
   } catch (e) {
-    console.warn('Stripe checkout failed:', e);
+    console.warn('Checkout API failed:', e);
   }
 
-  // Fallback: save order locally
-  const orderRef = 'TD-' + Date.now().toString(36).toUpperCase();
-  const order = {
-    ref: orderRef,
-    items: cart.map(item => {
-      const p = products.find(x => x.id === item.id);
-      return { id: item.id, name: p?.name, qty: item.qty, price: p?.price, aliexpress_url: p?.aliexpress_url };
-    }),
-    total: getCartTotal(),
-    date: new Date().toISOString()
-  };
-  const orders = JSON.parse(localStorage.getItem('td_orders') || '[]');
-  orders.push(order);
-  localStorage.setItem('td_orders', JSON.stringify(orders));
-  alert(`Order ${orderRef} saved! We'll process it shortly.`);
-  cart = [];
-  saveCart();
-  updateCartUI();
-  closeCart();
+  // Fallback: directly to Shopify store
+  window.location.href = 'https://mc6zk6-z1.myshopify.com';
 }
 
 function closeCart() {
